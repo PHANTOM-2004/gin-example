@@ -5,9 +5,13 @@ import (
 	"gin-example/pkg/setting"
 	"gin-example/routers"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
+
 	router := routers.InitRouter()
 
 	s := &http.Server{

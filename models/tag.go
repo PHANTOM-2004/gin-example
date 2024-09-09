@@ -19,3 +19,28 @@ func GetTagTotal(maps interface{}) (count int) {
 
 	return
 }
+
+func AddTag(name string, state int, createdBy string) bool {
+	db.Create(&Tag{
+		Name:      name,
+		CreatedBy: createdBy,
+		State:     state,
+	})
+
+	return true
+}
+
+func ExistTag(name string) bool {
+	var tag Tag
+	// 这里的语法具体看一下文档
+	db.Select("id").Where("name = ?", name).First(&tag)
+
+	/*NOTE When query with struct, GORM will only query with those fields has non-zero value,
+	* that means if your field’s value is 0, '', false or other zero values,
+	* it won’t be used to build query conditions, for example:
+
+		db.Where(&User{Name: "jinzhu", Age: 0}).Find(&users)
+		SELECT * FROM users WHERE name = "jinzhu";
+	*/
+	return tag.ID > 0
+}

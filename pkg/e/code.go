@@ -42,7 +42,7 @@ func String(e Ecode) (res string) {
 	case ERROR_AUTH:
 		res = "Token错误"
 	default:
-		log.Fatal("未知错误码")
+		log.Fatalf("未知错误码[%d]", e)
 	}
 	return
 }
