@@ -2,32 +2,25 @@ package e
 
 import log "github.com/sirupsen/logrus"
 
+type Ecode = int
+
 const (
-	SUCCESS        = 200
-	ERROR          = 500
-	INVALID_PARAMS = 400
+	SUCCESS        Ecode = 200
+	ERROR          Ecode = 500
+	INVALID_PARAMS Ecode = 400
 
-	ERROR_EXIST_TAG         = 10001
-	ERROR_NOT_EXIST_TAG     = 10002
-	ERROR_NOT_EXIST_ARTICLE = 10003
+	ERROR_EXIST_TAG         Ecode = 10001
+	ERROR_NOT_EXIST_TAG     Ecode = 10002
+	ERROR_NOT_EXIST_ARTICLE Ecode = 10003
 
-	ERROR_AUTH_CHECK_TOKEN_FAIL    = 20001
-	ERROR_AUTH_CHECK_TOKEN_TIMEOUT = 20002
-	ERROR_AUTH_TOKEN               = 20003
-	ERROR_AUTH                     = 20004
+	ERROR_AUTH_CHECK_TOKEN_FAIL    Ecode = 20001
+	ERROR_AUTH_CHECK_TOKEN_TIMEOUT Ecode = 20002
+	ERROR_AUTH_TOKEN               Ecode = 20003
+	ERROR_AUTH                     Ecode = 20004
 )
 
-type Etype struct {
-	code int
-}
-
-func NewEtype(code int) (res Etype) {
-	res.code = code
-	return
-}
-
-func (e *Etype) String() (res string) {
-	switch e.code {
+func String(e Ecode) (res string) {
+	switch e {
 	case SUCCESS:
 		res = "ok"
 	case ERROR:
