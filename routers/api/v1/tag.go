@@ -79,27 +79,28 @@ func AddTag(c *gin.Context) {
 	valid.Required(createdBy, "created_by").Message("创建人最长100字符")
 	valid.Range(state, 0, 1, "state").Message("状态只能为0/1")
 
-	tag_exist := models.ExistTag(name)
 	verror := valid.HasErrors()
 
 	code := e.INVALID_PARAMS
 
-	if !verror && !tag_exist {
+	if !verror {
 		// 没错误发生, 并且这个tag还不存在, 意味着成功插入
-		code = e.SUCCESS
-		models.AddTag(name, state, createdBy)
-	}
-	// tag存在, 不能重复插入
-	if tag_exist {
-		log.WithFields(log.Fields{
-			"tag_name": name,
-		}).Warn(e.String(code))
+		tag_exist := models.ExistTag(name)
+		if !tag_exist {
+			code = e.SUCCESS
+			models.AddTag(name, state, createdBy)
+		} else {
+			// tag存在, 不能重复插入
+			log.WithFields(log.Fields{
+				"tag_name": name,
+			}).Warn(e.String(code))
+			code = e.ERROR_EXIST_TAG
 
-		code = e.ERROR_EXIST_TAG
+		}
 	}
 
 	// 存在数据错误
-  //
+	//
 	for _, err := range valid.Errors {
 		log.Warnf("validation error: [%s]: %s", err.Key, err.Message)
 	}
@@ -112,9 +113,82 @@ func AddTag(c *gin.Context) {
 }
 
 // 修改文章标签
+// apiv1.PUT("/tags/:id", v1.EditTag)
+
 func EditTag(c *gin.Context) {
+	id := com.StrTo(c.Query("id")).MustInt() // 修改的时候使用的是id进行修改
+	name := c.Query("name")
+	modifiedBy := c.Query("modified_by")
+
+	valid := validation.Validation{}
+
+	state := -1
+
+	if arg := c.Query("state"); arg != "" {
+		state = com.StrTo(arg).MustInt()
+		valid.Range(state, 0, 1, "state").Message("状态只能是0或者1")
+	}
+
+	valid.Required(id, "id").Message("id不能为空") // 注意这里id制定的是字段名称
+	valid.Required(modifiedBy, "modified_by").Message("修改人不能为空")
+	valid.MaxSize(modifiedBy, 100, "modified_by").Message("修改人名称最长100字符")
+	valid.MaxSize(name, 100, "name").Message("名称最长100字符")
+
+	code := e.INVALID_PARAMS
+	verror := valid.HasErrors()
+
+	if !verror {
+		tag_exist := models.ExistTag(name)
+
+		if tag_exist {
+			// 如果标签存在才能edit, 这是显而易见的
+			data := make(map[string]any)
+			data["modified_by"] = modifiedBy // 这里传递修改人的姓名
+			if name != "" {
+				// NOTE: 这里为什么要记录name?我还没有搞明白
+				data["name"] = name // 这里传递
+			}
+			if state != -1 {
+				data["state"] = state
+			}
+			models.EditTag(id, data)
+		} else {
+			// 不存在, 直接抛出错误
+			code = e.ERROR_NOT_EXIST_TAG
+			log.Warnf("try edit non-existed tag[%s], aborted\n", name)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": code,
+		"msg":  e.String(code),
+		"data": make(map[string]string),
+	})
 }
 
 // 删除文章标签
 func DeleteTag(c *gin.Context) {
+	id := com.StrTo(c.Query("id")).MustInt()
+
+	valid := validation.Validation{}
+	valid.Min(id, 1, "id").Message("ID必须大于0")
+
+	code := e.INVALID_PARAMS
+	verror := valid.HasErrors()
+
+	if !verror {
+		code = e.SUCCESS
+		tag_exist := models.ExistTagByID(id)
+		if tag_exist {
+			models.DeleteTag(id)
+		} else {
+			code = e.ERROR_NOT_EXIST_TAG
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": code,
+		"msg":  e.String(code),
+		"data": make(map[string]string),
+	})
 }
