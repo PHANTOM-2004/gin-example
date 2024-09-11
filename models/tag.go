@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	log "github.com/sirupsen/logrus"
 )
 
 type Tag struct {
@@ -84,16 +83,10 @@ gorm所支持的回调方法：
 
 func (tag *Tag) BeforeCreate(scope *gorm.Scope) error {
 	err := scope.SetColumn("CreatedOn", time.Now().Unix())
-	if err != nil {
-		log.Fatal(err)
-	}
-	return nil
+	return err
 }
 
 func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
 	err := scope.SetColumn("ModifiedOn", time.Now().Unix())
-	if err != nil {
-		log.Fatal(err)
-	}
-	return nil
+	return err
 }

@@ -4,7 +4,7 @@ import (
 	"gin-example/models"
 	"gin-example/pkg/e"
 	"gin-example/pkg/setting"
-	"gin-example/util"
+	"gin-example/pkg/util"
 	"net/http"
 
 	"github.com/astaxie/beego/validation"
@@ -67,12 +67,6 @@ func AddTag(c *gin.Context) {
 	state := com.StrTo(state_str).MustInt()
 	createdBy := c.Query("created_by")
 
-	log.WithFields(log.Fields{
-		"name":       name,
-		"state":      state,
-		"created_by": createdBy,
-	}).Debug("query for add tag")
-
 	valid := validation.Validation{}
 	valid.Required(name, "name").Message("名称不能为空")
 	valid.MaxSize(name, 100, "name").Message("名称最长100字符")
@@ -104,6 +98,12 @@ func AddTag(c *gin.Context) {
 	for _, err := range valid.Errors {
 		log.Warnf("validation error: [%s]: %s", err.Key, err.Message)
 	}
+
+	log.WithFields(log.Fields{
+		"name":       name,
+		"state":      state,
+		"created_by": createdBy,
+	}).Debug("add tag:", e.String(code))
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
@@ -141,6 +141,7 @@ func EditTag(c *gin.Context) {
 		tag_exist := models.ExistTag(name)
 
 		if tag_exist {
+			code = e.SUCCESS
 			// 如果标签存在才能edit, 这是显而易见的
 			data := make(map[string]any)
 			data["modified_by"] = modifiedBy // 这里传递修改人的姓名
@@ -151,13 +152,26 @@ func EditTag(c *gin.Context) {
 			if state != -1 {
 				data["state"] = state
 			}
+
 			models.EditTag(id, data)
 		} else {
 			// 不存在, 直接抛出错误
 			code = e.ERROR_NOT_EXIST_TAG
+			// 编辑不存在的标签
 			log.Warnf("try edit non-existed tag[%s], aborted\n", name)
 		}
 	}
+
+	// 存在数据错误
+	for _, err := range valid.Errors {
+		log.Warnf("validation error: [%s]: %s", err.Key, err.Message)
+	}
+	// debug日志记录
+	log.WithFields(log.Fields{
+		"tag_name":    name,
+		"modified_by": modifiedBy,
+		"state":       state,
+	}).Debug("edit_tag:", e.String(code))
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
