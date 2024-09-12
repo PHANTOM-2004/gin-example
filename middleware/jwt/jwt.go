@@ -23,6 +23,7 @@ func jwtFunc(c *gin.Context) {
 
 	if token == "" {
 		code = e.INVALID_PARAMS
+    log.Warn("未提供token")
 	} else {
 		log.Infof("get jwt token[%s]", token)
 		claims, err := util.ParseToken(token)

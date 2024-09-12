@@ -1,11 +1,5 @@
 package models
 
-import (
-	"time"
-
-	"github.com/jinzhu/gorm"
-)
-
 type Article struct {
 	Model
 
@@ -20,16 +14,16 @@ type Article struct {
 	State      int    `json:"state"`
 }
 
-// hook
-func (a *Article) BeforeCreate(scope *gorm.Scope) error {
-	// 这里使用的是fieldname, 注意是结构体的名字CreatedOn
-	return scope.SetColumn("CreatedOn", time.Now().Unix())
-}
-
-// hook
-func (a *Article) BeforeUpdate(scope *gorm.Scope) error {
-	return scope.SetColumn("ModifiedOn", time.Now().Unix())
-}
+// // hook
+// func (a *Article) BeforeCreate(scope *gorm.Scope) error {
+// 	// 这里使用的是fieldname, 注意是结构体的名字CreatedOn
+// 	return scope.SetColumn("CreatedOn", time.Now().Unix())
+// }
+//
+// // hook
+// func (a *Article) BeforeUpdate(scope *gorm.Scope) error {
+// 	return scope.SetColumn("ModifiedOn", time.Now().Unix())
+// }
 
 func ExistArticleByID(id int) bool {
 	var a Article

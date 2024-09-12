@@ -1,11 +1,5 @@
 package models
 
-import (
-	"time"
-
-	"github.com/jinzhu/gorm"
-)
-
 type Tag struct {
 	Model
 	Name       string `json:"name"`
@@ -81,12 +75,12 @@ gorm所支持的回调方法：
 如果实现的花就会在框架之中自动调用
 * */
 
-func (tag *Tag) BeforeCreate(scope *gorm.Scope) error {
-	err := scope.SetColumn("CreatedOn", time.Now().Unix())
-	return err
-}
-
-func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
-	err := scope.SetColumn("ModifiedOn", time.Now().Unix())
-	return err
-}
+// func (tag *Tag) BeforeCreate(scope *gorm.Scope) error {
+// 	err := scope.SetColumn("CreatedOn", time.Now().Unix())
+// 	return err
+// }
+//
+// func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
+// 	err := scope.SetColumn("ModifiedOn", time.Now().Unix())
+// 	return err
+// }

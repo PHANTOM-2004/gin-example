@@ -210,10 +210,9 @@ func DeleteArticle(c *gin.Context) {
 		} else {
 			code = e.ERROR_NOT_EXIST_ARTICLE
 		}
-	} else {
-		for _, err := range valid.Errors {
-			log.Printf("err.key: %s, err.message: %s", err.Key, err.Message)
-		}
+	}
+	for _, err := range valid.Errors {
+		log.Printf("err.key: %s, err.message: %s", err.Key, err.Message)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
