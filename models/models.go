@@ -5,12 +5,11 @@ import (
 	"gin-example/pkg/setting"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"gorm.io/plugin/soft_delete"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var db *gorm.DB
@@ -116,8 +115,10 @@ func init() {
 	sqldb.SetMaxOpenConns(100)
 
 	// 设置回调函数
-	db.Callback().Create().Replace("gorm:update_time_stamp", updateTimeStampForCreateCallback)
-	db.Callback().Update().Replace("gorm:update_time_stamp", updateTimeStampForUpdateCallback)
+	// https://github.com/go-gorm/gorm/blob/master/callbacks/callbacks.go
+	// 注意这里是before, 而不是after, after都插入完毕了
+	db.Callback().Create().Before("gorm:create").Register("my_plug:update_time_stamp", updateTimeStampForCreateCallback)
+	db.Callback().Update().Before("gorm:update").Replace("my_plug:update_time_stamp", updateTimeStampForUpdateCallback)
 }
 
 func CloseDB() {
@@ -131,61 +132,66 @@ func CloseDB() {
 // 我们需要callback方法, 比如创建时间这种, 我们不可能为所有的
 // 类都一个一个编写一个hook去更新时间
 // 这里的callback是为了create和modify进行设计的
-func updateTimeStampForCreateCallback(s *gorm.Scope) {
-	if s.HasError() {
-		log.Fatal("update/create callback: db error")
+func updateTimeStampForCreateCallback(db *gorm.DB) {
+	fCreatedOn := db.Statement.Schema.LookUpField("CreatedOn")
+	fModifiedOn := db.Statement.Schema.LookUpField("ModifiedOn")
+	if fCreatedOn == nil && fModifiedOn == nil {
+		// 不存在这两个标签直接返回
+		log.Debug("not found CreatedOn and ModifiedOn")
 		return
 	}
-	/*
-		for _, field := range scope.Fields() {
-		    if field.Name == name || field.DBName == name {
-		        return field, true
-		    }
-		    if field.DBName == dbName {
-		        mostMatchedField = field
-		    }
-	*/
 
 	nowTime := time.Now().Unix()
-	createTimeField, ok := s.FieldByName("CreatedOn")
-	/*
-		注意这里的空值说的是什么意思
-				func isBlank(value reflect.Value) bool {
-					switch value.Kind() {
-					case reflect.String:
-						return value.Len() == 0
-					case reflect.Bool:
-						return !value.Bool()
-					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-						return value.Int() == 0
-					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-						return value.Uint() == 0
-					case reflect.Float32, reflect.Float64:
-						return value.Float() == 0
-					case reflect.Interface, reflect.Ptr:
-						return value.IsNil()
-					}
 
-					return reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface())
-				}
-	*/
+	if fCreatedOn != nil {
 
-	if ok && createTimeField.IsBlank {
-		// 前提是有这个栏
-		// 如果这个栏是blank的时候我么进行更新
-		createTimeField.Set(nowTime)
+		// 设置创建时间
+		_, isZero := fCreatedOn.ValueOf(db.Statement.Context, db.Statement.ReflectValue)
+		log.Debug("Find CreatedOn, isZero=", isZero)
+		if isZero {
+			// 设置为当前时间
+			err := fCreatedOn.Set(db.Statement.Context, db.Statement.ReflectValue, nowTime)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Debug("set time:", nowTime)
+		}
 	}
 
-	modifyTimeField, ok := s.FieldByName("ModifiedOn")
-	if ok && modifyTimeField.IsBlank {
-		modifyTimeField.Set(nowTime)
+	if fModifiedOn != nil {
+		// 设置修改时间
+		_, isZero := fModifiedOn.ValueOf(db.Statement.Context, db.Statement.ReflectValue)
+		log.Debug("Find ModifiedOn, isZero=", isZero)
+		if isZero {
+			db.Statement.SetColumn("ModifiedOn", nowTime)
+			log.Debug("set time:", nowTime)
+		}
 	}
 }
 
-func updateTimeStampForUpdateCallback(s *gorm.Scope) {
-	_, ok := s.Get("gorm:update_column")
+func updateTimeStampForUpdateCallback(db *gorm.DB) {
+	// 如果找不到会返回nil
+	f := db.Statement.Schema.LookUpField("ModifiedOn")
+	if f == nil {
+		// 不存在这个那么就无需更新
+		log.Debug("modified_on callback: no need to update")
+		return
+	}
 
-	if !ok {
-		s.SetColumn("ModifiedOn", time.Now().Unix())
+	// 存在这一栏的话就需要更新
+	// Get value from field
+	_, isZero := f.ValueOf(db.Statement.Context, db.Statement.ReflectValue)
+	log.Debug("Find ModifiedOn, isZero=", isZero)
+
+	if !isZero {
+		// 如果不是零值, 那么就不需要更改
+		return
+	}
+
+	// Set value to field
+	nowTime := time.Now().Unix()
+	err := f.Set(db.Statement.Context, db.Statement.ReflectValue, nowTime)
+	if err != nil {
+		log.Fatal(err)
 	}
 }

@@ -14,7 +14,7 @@ func GetTags(pageNum int, pageSize int, maps any) (tags []Tag) {
 	return
 }
 
-func GetTagTotal(maps any) (count int) {
+func GetTagTotal(maps any) (count int64) {
 	db.Model(&Tag{}).Where(maps).Count(&count)
 
 	return
