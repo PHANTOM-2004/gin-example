@@ -114,6 +114,6 @@ func AddArticle(data map[string]any) bool {
 }
 
 func DeleteArticle(id int) bool {
-	db.Where("id = ?", id).Delete(Article{})
+	db.Where("id = ?", id).Delete(&Article{})
 	return true
 }
