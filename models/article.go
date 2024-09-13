@@ -1,5 +1,7 @@
 package models
 
+import log "github.com/sirupsen/logrus"
+
 type Article struct {
 	Model
 
@@ -115,5 +117,13 @@ func AddArticle(data map[string]any) bool {
 
 func DeleteArticle(id int) bool {
 	db.Where("id = ?", id).Delete(&Article{})
+	return true
+}
+
+func CleanAllArticle() bool {
+	log.Info("Running article cleaning")
+	defer log.Info("all soft deleted articles cleaned")
+
+	db.Unscoped().Where("deleted_on != ?", 0).Delete(&Article{})
 	return true
 }

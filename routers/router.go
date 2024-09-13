@@ -8,9 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 
 	v1 "gin-example/routers/api/v1"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func InitRouter() *gin.Engine {
+	defer log.Info("router initialized")
+
 	r := gin.New()
 
 	r.Use(gin.Logger())

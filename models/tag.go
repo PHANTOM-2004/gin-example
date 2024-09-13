@@ -1,5 +1,7 @@
 package models
 
+import log "github.com/sirupsen/logrus"
+
 type Tag struct {
 	Model
 	Name       string `json:"name"`
@@ -38,6 +40,14 @@ func EditTag(id int, maps any) bool {
 
 func DeleteTag(id int) bool {
 	db.Where("id = ?", id).Delete(&Tag{})
+	return true
+}
+
+func CleanAllTag() bool {
+	log.Info("Running tag cleaning")
+	defer log.Info("all soft deleted tags cleaned")
+
+	db.Unscoped().Where("deleted_on != ?", 0).Delete(&Tag{})
 	return true
 }
 
