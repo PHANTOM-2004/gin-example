@@ -5,12 +5,12 @@ import (
 	"gin-example/pkg/setting"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 	"gorm.io/plugin/soft_delete"
 
 	log "github.com/sirupsen/logrus"
-
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 var db *gorm.DB
@@ -19,7 +19,7 @@ type Model struct {
 	ID         int                   `gorm:"primary_key" json:"id"`
 	CreatedOn  int                   `json:"created_on"`
 	ModifiedOn int                   `json:"modified_on"`
-	DeletedOn   soft_delete.DeletedAt `json:"deleted_on"`
+	DeletedOn  soft_delete.DeletedAt `json:"deleted_on"`
 }
 
 /*
@@ -85,28 +85,35 @@ func init() {
 	password = sec.Key("PASSWORD").String()
 	host = sec.Key("HOST").String()
 	tablePrefix = sec.Key("TABLE_PREFIX").String()
-
-	db_info := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user,
 		password,
 		host,
 		dbName)
-	log.Info(db_info)
+	log.Info(dsn, dbType)
 
-	db, err = gorm.Open(dbType, db_info)
+	db, err = gorm.Open(
+		mysql.Open(dsn),
+		&gorm.Config{
+			// 设置默认的db table handler
+			NamingStrategy: schema.NamingStrategy{
+				// table name prefix, table for `User` would be `t_users`
+				TablePrefix: tablePrefix,
+				// use singular table name, table for `User` would be `user` with this option enabled
+				SingularTable: true,
+			},
+		},
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// 设置默认的db table handler
-	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-		return tablePrefix + defaultTableName
+	sqldb, err := db.DB()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-
-	db.SingularTable(true)
-	db.DB().SetMaxIdleConns(10)
-	db.DB().SetMaxOpenConns(100)
+	sqldb.SetMaxIdleConns(10)
+	sqldb.SetMaxOpenConns(100)
 
 	// 设置回调函数
 	db.Callback().Create().Replace("gorm:update_time_stamp", updateTimeStampForCreateCallback)
@@ -114,7 +121,11 @@ func init() {
 }
 
 func CloseDB() {
-	defer db.Close()
+	sqldb, err := db.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sqldb.Close()
 }
 
 // 我们需要callback方法, 比如创建时间这种, 我们不可能为所有的
