@@ -43,7 +43,7 @@ func GetTags(c *gin.Context) {
 	// 我们通过model进行查询,查询对象是maps
 	data["list"] = models.GetTags(
 		util.GetPage(c),
-		setting.PageSize,
+		setting.AppSetting.PageSize,
 		maps,
 	)
 

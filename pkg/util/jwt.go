@@ -5,9 +5,10 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt"
+	log "github.com/sirupsen/logrus"
 )
 
-var jwtSecret = []byte(setting.JwtSecret)
+var jwtSecret = []byte(setting.AppSetting.JwtSecret)
 
 type Claims struct {
 	Username string `json:"username"`
@@ -16,6 +17,8 @@ type Claims struct {
 }
 
 func GenerateToken(username, password string) (string, error) {
+	log.Debugf("generate token with [%s]", string(jwtSecret))
+
 	nowTime := time.Now()
 	expireTime := nowTime.Add(3 * time.Hour)
 

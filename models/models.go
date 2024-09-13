@@ -5,6 +5,7 @@ import (
 	"gin-example/pkg/setting"
 	"time"
 
+	"github.com/go-co-op/gocron/v2"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -59,45 +60,53 @@ CREATE TABLE `blog_auth` (
 INSERT INTO `blog`.`blog_auth` (`id`, `username`, `password`) VALUES (null, 'test', 'test123456');
 */
 
-func init() {
-	defer log.Info("model initialized")
-
-	var (
-		err         error
-		dbType      string
-		dbName      string
-		user        string
-		password    string
-		host        string
-		tablePrefix string
-	)
-
-	sec, err := setting.Cfg.GetSection("database")
+func cleanHook() {
+	scheduler, err := gocron.NewScheduler()
 	if err != nil {
-		log.Fatal(2, "Fail to get section 'database': %v", err)
+		log.Fatal(err)
 	}
 
-	// 从配置文件中读取数据库信息
-	dbType = sec.Key("TYPE").String()
-	dbName = sec.Key("NAME").String()
-	user = sec.Key("USER").String()
-	password = sec.Key("PASSWORD").String()
-	host = sec.Key("HOST").String()
-	tablePrefix = sec.Key("TABLE_PREFIX").String()
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local",
-		user,
-		password,
-		host,
-		dbName)
-	log.Info(dsn, dbType)
+	// 清除tag
+	jCleanTag, err := scheduler.NewJob(
+		gocron.DurationJob(10*time.Second),
+		gocron.NewTask(CleanAllTag),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("[cleaning tag]:", jCleanTag.ID())
 
-	db, err = gorm.Open(
+	// 清除文章
+	jCleanArticle, err := scheduler.NewJob(
+		gocron.DurationJob(10*time.Second),
+		gocron.NewTask(CleanAllArticle),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("[cleaning article]:", jCleanArticle.ID())
+
+	scheduler.Start()
+}
+
+func SetUp() {
+	defer log.Info("model initialized")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local",
+		setting.DatabaseSetting.User,
+		setting.DatabaseSetting.Password,
+		setting.DatabaseSetting.Host,
+		setting.DatabaseSetting.Name,
+	)
+	log.Info(dsn, setting.DatabaseSetting.Type)
+
+	db, err := gorm.Open(
 		mysql.Open(dsn),
 		&gorm.Config{
 			// 设置默认的db table handler
 			NamingStrategy: schema.NamingStrategy{
 				// table name prefix, table for `User` would be `t_users`
-				TablePrefix: tablePrefix,
+				TablePrefix: setting.DatabaseSetting.TablePrefix,
 				// use singular table name, table for `User` would be `user` with this option enabled
 				SingularTable: true,
 			},
@@ -119,6 +128,8 @@ func init() {
 	// 注意这里是before, 而不是after, after都插入完毕了
 	db.Callback().Create().Before("gorm:create").Register("my_plug:update_time_stamp", updateTimeStampForCreateCallback)
 	db.Callback().Update().Before("gorm:update").Replace("my_plug:update_time_stamp", updateTimeStampForUpdateCallback)
+
+	cleanHook()
 }
 
 func CloseDB() {
