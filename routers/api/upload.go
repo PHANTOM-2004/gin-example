@@ -30,6 +30,7 @@ func UploadImage(c *gin.Context) {
 	} else {
 		imageName := upload.GetImageName(image.Filename)
 		fullPath := upload.GetImageFullPath()
+    log.Info(fullPath)
 		savePath := upload.GetImagePath()
 
 		src := fullPath + imageName

@@ -16,7 +16,6 @@ func main() {
 
 	setting.Setup()
 	models.SetUp()
-
 	router := routers.InitRouter()
 
 	s := &http.Server{

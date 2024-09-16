@@ -27,6 +27,8 @@ func GetAuth(c *gin.Context) {
 	data := make(map[string]any)
 	code := e.INVALID_PARAMS
 
+	log.Debug("getting auth")
+
 	if ok {
 		isExist := models.CheckAuth(username, password)
 		if isExist {
@@ -50,6 +52,7 @@ func GetAuth(c *gin.Context) {
 		}
 	}
 
+	log.Debug("response auth")
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
 		"msg":  e.String(code),

@@ -35,7 +35,7 @@ CREATE TABLE `blog_tag` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='文章标签管理';
 
- alter table blog_article add cover_image_url 
+ alter table blog_article add cover_image_url
  varchar(255) DEFAULT '' COMMENT '封面图片地址';
 
 CREATE TABLE `blog_article` (
@@ -81,7 +81,7 @@ func cleanHook() {
 
 	// 清除文章
 	jCleanArticle, err := scheduler.NewJob(
-		gocron.DurationJob(10*time.Second),
+		gocron.DurationJob(120*time.Second),
 		gocron.NewTask(CleanAllArticle),
 	)
 	if err != nil {
@@ -103,7 +103,9 @@ func SetUp() {
 	)
 	log.Info(dsn, setting.DatabaseSetting.Type)
 
-	db, err := gorm.Open(
+	var err error
+
+	db, err = gorm.Open(
 		mysql.Open(dsn),
 		&gorm.Config{
 			// 设置默认的db table handler
