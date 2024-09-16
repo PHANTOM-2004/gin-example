@@ -12,6 +12,7 @@ import (
 
 func main() {
 	log.SetLevel(log.DebugLevel)
+	// log.SetFormatter(&log.JSONFormatter{})
 
 	setting.Setup()
 	models.SetUp()

@@ -17,6 +17,10 @@ const (
 	ERROR_AUTH_CHECK_TOKEN_TIMEOUT Ecode = 20002
 	ERROR_AUTH_TOKEN               Ecode = 20003
 	ERROR_AUTH                     Ecode = 20004
+
+	ERROR_UPLOAD_IMAGE_INVALID_FMT Ecode = 30001
+	ERROR_UPLOAD_IMAGE_CHECK_FAIL  Ecode = 30002
+	ERROR_UPLOAD_IMAGE_SAVE_FAIL   Ecode = 30003
 )
 
 func String(e Ecode) (res string) {
@@ -41,6 +45,13 @@ func String(e Ecode) (res string) {
 		res = "Token生成失败"
 	case ERROR_AUTH:
 		res = "Token错误"
+	case ERROR_UPLOAD_IMAGE_CHECK_FAIL:
+		res = "图片检查失败"
+	case ERROR_UPLOAD_IMAGE_INVALID_FMT:
+		res = "图片格式不合法"
+	case ERROR_UPLOAD_IMAGE_SAVE_FAIL:
+		res = "图片保存失败"
+
 	default:
 		log.Fatalf("未知错误码[%d]", e)
 	}
