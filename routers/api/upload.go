@@ -30,7 +30,7 @@ func UploadImage(c *gin.Context) {
 	} else {
 		imageName := upload.GetImageName(image.Filename)
 		fullPath := upload.GetImageFullPath()
-    log.Info(fullPath)
+		log.Info(fullPath)
 		savePath := upload.GetImagePath()
 
 		src := fullPath + imageName
@@ -51,7 +51,7 @@ func UploadImage(c *gin.Context) {
 			code = e.ERROR_UPLOAD_IMAGE_SAVE_FAIL
 		} else {
 			// no error, check passed
-			log.Info("image uploaded")
+			log.Infof("image uploaded at [%v]", savePath)
 			data["image_url"] = upload.GetImageFullUrl(imageName)
 			data["image_save_url"] = savePath + imageName
 		}

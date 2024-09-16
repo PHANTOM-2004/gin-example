@@ -71,7 +71,7 @@ func cleanHook() {
 
 	// 清除tag
 	jCleanTag, err := scheduler.NewJob(
-		gocron.DurationJob(10*time.Second),
+		gocron.DurationJob(120*time.Second),
 		gocron.NewTask(CleanAllTag),
 	)
 	if err != nil {
