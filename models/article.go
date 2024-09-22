@@ -4,7 +4,6 @@ import log "github.com/sirupsen/logrus"
 
 type Article struct {
 	Model
-
 	TagID int `json:"tag_id" gorm:"index"` // index in database
 	Tag   Tag `json:"tag"`                 // 这里应该是belong to 关系, 任何Article应该属于一个Tag
 
@@ -28,13 +27,13 @@ type Article struct {
 // 	return scope.SetColumn("ModifiedOn", time.Now().Unix())
 // }
 
-func ExistArticleByID(id int) bool {
+func ExistArticleByID(id int) (bool, error) {
 	var a Article
-	db.Select("id").Where("id = ?", id).First(&a)
-	return a.ID > 0
+	err := db.Select("id").Where("id = ?", id).First(&a).Error
+	return a.ID > 0, err
 }
 
-func GetArticle(id int) (a Article) {
+func GetArticle(id int) (a *Article, err error) {
 	/*
 	   type User struct {
 	     gorm.Model
@@ -59,7 +58,7 @@ func GetArticle(id int) (a Article) {
 	   // SELECT * FROM profiles WHERE user_id IN (1,2,3,4); // has one
 	   // SELECT * FROM roles WHERE id IN (4,5,6); // belongs to
 	*/
-	db.Where("id = ?", id).Preload("Tag").First(&a) // 首先找到具有当前id 的文章
+	err = db.Where("id = ?", id).Preload("Tag").First(a).Error // 首先找到具有当前id 的文章
 	return
 }
 
@@ -99,13 +98,14 @@ func GetArticles(pageNum int, pageSize int, maps any) (a []Article) {
 	return
 }
 
-func EditArticle(id int, data any) bool {
-	db.Model(&Article{}).Where("id = ?", id).Updates(data)
-	return true
+func EditArticle(id int, data any) error {
+	err := db.Model(&Article{}).Where("id = ?", id).Updates(data).Error
+	return err
 }
 
-func AddArticle(data map[string]any) bool {
-	db.Create(&Article{
+func AddArticle(data map[string]any) error {
+	log.Debug(data)
+	err := db.Create(&Article{
 		TagID:         data["tag_id"].(int),
 		Title:         data["title"].(string),
 		Desc:          data["desc"].(string),
@@ -113,13 +113,13 @@ func AddArticle(data map[string]any) bool {
 		CreatedBy:     data["created_by"].(string),
 		State:         data["state"].(int),
 		CoverImageURL: data["cover_image_url"].(string),
-	})
-	return true
+	}).Error
+	return err
 }
 
-func DeleteArticle(id int) bool {
-	db.Where("id = ?", id).Delete(&Article{})
-	return true
+func DeleteArticle(id int) error {
+	err := db.Where("id = ?", id).Delete(&Article{}).Error
+	return err
 }
 
 func CleanAllArticle() bool {
