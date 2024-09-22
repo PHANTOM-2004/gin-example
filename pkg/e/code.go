@@ -5,6 +5,11 @@ import log "github.com/sirupsen/logrus"
 type Ecode = int
 
 const (
+	CACHE_ARTICLE = "ARTICLE"
+	CACHE_TAG     = "TAG"
+)
+
+const (
 	SUCCESS        Ecode = 200
 	ERROR          Ecode = 500
 	INVALID_PARAMS Ecode = 400

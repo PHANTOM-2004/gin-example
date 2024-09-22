@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"gin-example/pkg/setting"
+	"time"
 
 	redis "github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
@@ -22,16 +23,17 @@ func Setup() error {
 	return nil
 }
 
-func Set(key string, data interface{}, time int) (bool, error) {
+func Set(key string, data interface{}, expiresTime int) (bool, error) {
 	value, err := json.Marshal(data)
 	if err != nil {
 		return false, err
 	}
 
+	// TODO: should context always be background
 	ctx := context.Background()
 
 	// TODO: this should not be zero(no limit)
-	err = Rdb.Set(ctx, key, value, 0).Err()
+	err = Rdb.Set(ctx, key, value, time.Second*time.Duration(expiresTime)).Err()
 	if err != nil {
 		return false, err
 	}
