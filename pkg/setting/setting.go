@@ -42,10 +42,19 @@ type Database struct {
 	TablePrefix string
 }
 
+type Redis struct {
+	Host        string
+	Password    string
+	MaxIdle     int
+	MaxActive   int
+	IdleTimeout time.Duration
+}
+
 var (
 	ServerSetting   = &Server{}
 	AppSetting      = &App{}
 	DatabaseSetting = &Database{}
+	RedisSetting    = &Redis{}
 )
 
 func Setup() {
@@ -63,6 +72,7 @@ func Setup() {
 			log.Fatal(err)
 		}
 		AppSetting.ImageMaxSize = AppSetting.ImageMaxSize * 1024 * 1024 // MB to B
+		// log
 		log.WithField(
 			"app setting", AppSetting,
 		).Info("")
@@ -77,6 +87,7 @@ func Setup() {
 		ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
 		ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
 
+		// log
 		log.WithField(
 			"server setting", ServerSetting,
 		).Info("")
@@ -90,9 +101,22 @@ func Setup() {
 			log.Fatal(err)
 		}
 
+		// log
 		log.WithField(
 			"db setting", DatabaseSetting,
 		).Info("")
 
+	}
+
+	{
+		// redis setting
+		err = cfg.Section("redis").MapTo(RedisSetting)
+		if err != nil {
+			log.Fatal(err)
+		}
+		RedisSetting.IdleTimeout = RedisSetting.IdleTimeout * time.Second
+
+		// log
+		log.WithField("redis setting", RedisSetting).Info("")
 	}
 }
